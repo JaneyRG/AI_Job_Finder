@@ -1,0 +1,8 @@
+<Solution>
+  <Configurations>
+    <Platform Name="x64" />
+    <Platform Name="x86" />
+  </Configurations>
+  <Project Path="../Database/dblib/dblib/dblib.vcxproj" Id="8fb25d3d-9acd-4de6-87f4-6931dcbe2766" />
+  <Project Path="../Tests/Tests.vcxproj" Id="378db305-59c4-4d3b-add7-1e6d36e5b41a" />
+</Solution>
