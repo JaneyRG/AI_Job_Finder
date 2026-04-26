@@ -78,7 +78,7 @@ namespace JobFinderDB
         // Use m_dbname as the database file.  On Windows this will be found in
         // the working directory of the process.  On other platforms you may
         // need to adjust the path.
-        m_dbPath = m_dbname;
+        m_dbPath = DB_NAME;
         int rc = sqlite3_open(m_dbPath.c_str(), &m_db);
         if (rc != SQLITE_OK)
         {
