@@ -1,7 +1,0 @@
-﻿  pch.cpp
-  dllmain.cpp
-  SqlDbHandler.cpp
-  Generating Code...
-E:\___GitHub_WorkArea\AI_Job_Finder\Database\dblib\dblib\SqlDbHandler.cpp(81,20): error C2065: 'm_dbname': undeclared identifier
-  (compiling source file '/SqlDbHandler.cpp')
-  
