@@ -1,1 +1,4 @@
-﻿
+﻿  DatabaseTests.cpp
+  pch.cpp
+     Creating library E:\___GitHub_WorkArea\AI_Job_Finder\x64\Debug\dblib_test.lib and object E:\___GitHub_WorkArea\AI_Job_Finder\x64\Debug\dblib_test.exp
+  dblib_test.vcxproj -> E:\___GitHub_WorkArea\AI_Job_Finder\x64\Debug\dblib_test.dll

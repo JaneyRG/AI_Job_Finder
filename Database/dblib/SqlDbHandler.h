@@ -3,7 +3,9 @@
 #include <vector>
 #include "sqlite3.h"
 
-
+#define ROOT_PATH "E:\\___GitHub_WorkArea\\AI_Job_Finder\\"
+inline constexpr const char* ROOT = ROOT_PATH;
+inline constexpr const char* DB_PATH = ROOT_PATH "Database";
 
 namespace JobFinderDB
 {
