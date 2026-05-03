@@ -3,5 +3,9 @@
     <Platform Name="x64" />
     <Platform Name="x86" />
   </Configurations>
+<<<<<<< HEAD
   <Project Path="dblib.vcxproj" Id="8fb25d3d-9acd-4de6-87f4-6931dcbe2766" />
+=======
+  <Project Path="dblib/dblib.vcxproj" Id="8fb25d3d-9acd-4de6-87f4-6931dcbe2766" />
+>>>>>>> d2263eda0647dfec5c8d17751f4c361bd1f7b361
 </Solution>
