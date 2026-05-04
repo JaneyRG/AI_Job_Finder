@@ -121,7 +121,8 @@
       <AdditionalDependencies>sqlite3.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Command>xcopy /y /d "$(TargetPath)" "$(SolutionDir)Bin\"</Command>
+      <Command>xcopy /y /d "$(TargetPath)" "$(SolutionDir)Bin\"
+xcopy /y /d "$(TargetDir)$(TargetName).lib" "$(SolutionDir)Bin\"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">

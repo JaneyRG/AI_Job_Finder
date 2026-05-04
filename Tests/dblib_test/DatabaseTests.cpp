@@ -1,172 +1,241 @@
 // DatabaseTests.cpp
 //
-// This file contains an example of how to write C++ unit tests for a
-// Windows dynamic‑link library (DLL) using the Microsoft C++ Unit Test
-// framework.  The goal of this sample is to illustrate how to load a
-// DLL at run time, obtain pointers to its exported functions via
-// `GetProcAddress`, and then exercise those functions in a suite of
-// deterministic tests.  Because the actual contents of the DLL
-// contained in the provided `Database.7z` archive are unknown at the
-// time this sample was prepared, the function names and signatures
-// below are placeholders.  Replace them with the real exports from
-// your DLL once you have extracted it.
-
-#include "pch.h" // Precompiled header for faster build times
-
-#include <Windows.h>
-#include <string>
-#include <stdexcept>
-
-// Include the Visual Studio C++ test framework headers.  This header
-// provides the `TEST_CLASS` and `TEST_METHOD` macros along with a set
-// of assertion helpers.
+// Unit tests for the SqlDbHandler class from the dblib DLL.
+// This test suite uses link-time binding to the DLL via its import library (.lib)
+// and tests the job finder database functionality including adding companies,
+// adding jobs, updating job status, and retrieving jobs by status.
+    
+#include "pch.h" // Precompiled header for faster build times   
 #include "CppUnitTest.h"
 
+// Include the SqlDbHandler header to access the API
+#include "../../Database/dblib/SqlDbHandler.h"
+
+#include <string>
+
+// Workaround for filesystem issues
+#if _MSC_VER >= 1900 && _MSC_VER < 1920
+#include <experimental/filesystem>
+namespace fs = std::experimental::filesystem;
+#else
+#include <filesystem>
+namespace fs = std::filesystem;
+#endif
+
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
+using namespace JobFinderDB;
 
-// Helper class responsible for loading the target DLL and resolving
-// pointers to the exported functions.  Each typedef corresponds to a
-// function signature expected from the DLL.  Adjust these typedefs
-// according to the real API exposed by your DLL.
-class DatabaseLibrary
+// Test suite for the SqlDbHandler class
+TEST_CLASS(SqlDbHandlerTests)
 {
 public:
-    // Typedefs for exported function signatures.  Replace these with
-    // the correct signatures once you know them.  For example, if
-    // your DLL exposes `int InitializeDatabase(const wchar_t* path);`
-    // then update the typedef accordingly.
-    typedef int (__stdcall *InitFunc)();
-    typedef int (__stdcall *AddRecordFunc)(int id, const wchar_t* value);
-    typedef int (__stdcall *GetRecordFunc)(int id, wchar_t* buffer, int bufferSize);
-    typedef int (__stdcall *DeleteRecordFunc)(int id);
-
-    DatabaseLibrary(const std::wstring& dllPath)
-        : m_module(nullptr),
-          Initialize(nullptr),
-          AddRecord(nullptr),
-          GetRecord(nullptr),
-          DeleteRecord(nullptr)
+    // Setup method called before each test
+    TEST_METHOD_INITIALIZE(Setup)
     {
-        // Attempt to load the DLL.  When running tests under Visual
-        // Studio, the working directory defaults to the project
-        // location.  You may need to adjust the relative path here or
-        // copy the DLL into your test project's output directory.
-        m_module = ::LoadLibraryW(dllPath.c_str());
-        if (!m_module) {
-            // Provide a descriptive error message if the DLL fails
-            // to load so that the test output is useful.  `GetLastError()`
-            // returns a Windows error code; use `std::system_category` to
-            // translate it to a human readable message.
-            throw std::runtime_error("Failed to load DLL: " +
-                                     std::to_string(::GetLastError()));
-        }
-
-        // Resolve exported functions.  If any of these lookups fail
-        // (i.e. return nullptr) you can either throw here or test
-        // their validity in your test cases.
-        Initialize    = reinterpret_cast<InitFunc>(::GetProcAddress(m_module, "Initialize"));
-        AddRecord     = reinterpret_cast<AddRecordFunc>(::GetProcAddress(m_module, "AddRecord"));
-        GetRecord     = reinterpret_cast<GetRecordFunc>(::GetProcAddress(m_module, "GetRecord"));
-        DeleteRecord  = reinterpret_cast<DeleteRecordFunc>(::GetProcAddress(m_module, "DeleteRecord"));
+        // Clean up any existing test database to ensure tests start fresh
+        fs::remove(DB_NAME);
     }
 
-    ~DatabaseLibrary()
+    // Cleanup method called after each test
+    TEST_METHOD_CLEANUP(Cleanup)
     {
-        if (m_module) {
-            ::FreeLibrary(m_module);
-            m_module = nullptr;
-        }
+        // Optional: Remove test database after each test
+        fs::remove(DB_NAME);
     }
 
-    // Public member variables hold the resolved function pointers.  They
-    // remain null if the symbol is absent from the DLL.
-    InitFunc        Initialize;
-    AddRecordFunc   AddRecord;
-    GetRecordFunc   GetRecord;
-    DeleteRecordFunc DeleteRecord;
-
-private:
-    HMODULE m_module;
-};
-
-// Test suite for the Database DLL.  Each TEST_METHOD exercises a
-// particular aspect of the library.  When filling in your own tests,
-// follow the AAA pattern: arrange state, act by calling into the
-// library, and assert on the expected outcome.
-TEST_CLASS(DatabaseDllTests)
-{
-public:
-
-    // Helper routine to construct the DatabaseLibrary object.  If
-    // loading the DLL fails, the exception will propagate to the test
-    // and cause a failure with a descriptive message.
-    static DatabaseLibrary LoadLibrary()
-    {
-        // You may need to adjust this path depending on where the
-        // extracted DLL lives relative to your test binary.  During
-        // development you can place the DLL next to the test
-        // executable and specify just L"Database.dll".
-        return DatabaseLibrary(L"..\\..\\Database.dll");
-    }
-
-    TEST_METHOD(DllLoadsSuccessfully)
+    TEST_METHOD(ConstructorConnectsToDatabase)
     {
         // Arrange & Act
-        DatabaseLibrary dll = LoadLibrary();
-
-        // Assert that all required function pointers are valid.  If
-        // your DLL exports additional functions, add them here.
-        Assert::IsNotNull(dll.Initialize, L"Initialize function should be exported");
-        Assert::IsNotNull(dll.AddRecord,  L"AddRecord function should be exported");
-        Assert::IsNotNull(dll.GetRecord,  L"GetRecord function should be exported");
-        Assert::IsNotNull(dll.DeleteRecord, L"DeleteRecord function should be exported");
+        SqlDbHandler handler;
+        
+        // Assert - if construction succeeds without exception, connection worked
+        Assert::IsTrue(true, L"SqlDbHandler should construct successfully");
     }
 
-    TEST_METHOD(CanInitializeAndShutdown)
+    TEST_METHOD(CanAddCompany)
     {
         // Arrange
-        DatabaseLibrary dll = LoadLibrary();
-        Assert::IsNotNull(dll.Initialize);
+        SqlDbHandler handler;
 
-        // Act
-        int result = dll.Initialize();
+        // Act - add a company to the database
+        handler.AddCompany("Microsoft", "Technology");
+
+        // Assert - no exception thrown means success
+        Assert::IsTrue(true, L"AddCompany should complete without throwing");
+    }
+
+    TEST_METHOD(CanAddMultipleCompanies)
+    {
+        // Arrange
+        SqlDbHandler handler;
+
+        // Act - add multiple companies
+        handler.AddCompany("Google", "Technology");
+        handler.AddCompany("Amazon", "E-Commerce");
+        handler.AddCompany("Meta", "Social Media");
 
         // Assert
-        Assert::AreEqual(0, result, L"Initialize should return 0 for success");
-
-        // If your DLL requires an explicit shutdown, add a call
-        // here and verify it succeeds.
+        Assert::IsTrue(true, L"Should be able to add multiple companies");
     }
 
-    TEST_METHOD(AddAndRetrieveRecord)
+    TEST_METHOD(CanAddJobWithDefaultStatus)
     {
         // Arrange
-        DatabaseLibrary dll = LoadLibrary();
-        Assert::IsNotNull(dll.Initialize);
-        Assert::IsNotNull(dll.AddRecord);
-        Assert::IsNotNull(dll.GetRecord);
-        Assert::IsNotNull(dll.DeleteRecord);
-        int initResult = dll.Initialize();
-        Assert::AreEqual(0, initResult, L"Initialize should succeed");
+        SqlDbHandler handler;
+        handler.AddCompany("Apple", "Technology");
 
-        // Act: add a record with ID 1 and value "Example"
-        const wchar_t* testValue = L"Example";
-        int addResult = dll.AddRecord(1, testValue);
+        // Act - add job with default NotApplied status
+        handler.AddJob(
+            "Software Engineer",
+            "C++ Developer position",
+            "Apple",
+            8  // match score
+        );
 
-        // Assert: verify add succeeded
-        Assert::AreEqual(0, addResult, L"AddRecord should succeed");
+        // Assert - retrieve jobs with NotApplied status
+        Jobs jobs = handler.GetJobsByStatus(jobStatus::NotApplied);
+        Assert::IsTrue(jobs.size() > 0, L"Should have at least one job with NotApplied status");
+        Assert::AreEqual(std::string("Software Engineer"), jobs[0].title, L"Job title should match");
+        Assert::AreEqual(std::string("Apple"), jobs[0].companyName, L"Company name should match");
+        Assert::AreEqual(8, jobs[0].match, L"Match score should be 8");
+    }
 
-        // Act: retrieve the record
-        wchar_t buffer[64] = {};
-        int getResult = dll.GetRecord(1, buffer, static_cast<int>(std::size(buffer)));
+    TEST_METHOD(CanAddJobWithSpecificStatus)
+    {
+        // Arrange
+        SqlDbHandler handler;
+        handler.AddCompany("Netflix", "Entertainment");
 
-        // Assert: retrieval should succeed and the returned string
-        // should match the inserted value.
-        Assert::AreEqual(0, getResult, L"GetRecord should succeed");
-        Assert::AreEqual(std::wstring(testValue), std::wstring(buffer), L"Retrieved value should match added value");
+        // Act - add job with Applied status
+        handler.AddJob(
+            "DevOps Engineer",
+            "Cloud infrastructure specialist",
+            "Netflix",
+            9,
+            jobStatus::Applied
+        );
 
-        // Clean up: delete the record
-        int delResult = dll.DeleteRecord(1);
-        Assert::AreEqual(0, delResult, L"DeleteRecord should succeed");
+        // Assert
+        Jobs jobs = handler.GetJobsByStatus(jobStatus::Applied);
+        Assert::IsTrue(jobs.size() > 0, L"Should have at least one applied job");
+        Assert::AreEqual(std::string("DevOps Engineer"), jobs[0].title, L"Job title should match");
+    }
+
+    TEST_METHOD(CanUpdateJobStatus)
+    {
+        // Arrange
+        SqlDbHandler handler;
+        handler.AddCompany("Tesla", "Automotive");
+        handler.AddJob("ML Engineer", "AI/ML role", "Tesla", 7, jobStatus::NotApplied);
+
+        // Act - update job status from NotApplied to Interviewing
+        handler.UpdateJobStatus("ML Engineer", jobStatus::Interviewing);
+
+        // Assert - job should now appear in Interviewing status
+        Jobs interviewingJobs = handler.GetJobsByStatus(jobStatus::Interviewing);
+        Assert::IsTrue(interviewingJobs.size() > 0, L"Should find job with Interviewing status");
+        Assert::AreEqual(std::string("ML Engineer"), interviewingJobs[0].title, L"Job title should match");
+        
+        // Verify it's no longer in NotApplied
+        Jobs notAppliedJobs = handler.GetJobsByStatus(jobStatus::NotApplied);
+        bool foundInNotApplied = false;
+        for (const auto& job : notAppliedJobs) {
+            if (job.title == "ML Engineer") {
+                foundInNotApplied = true;
+                break;
+            }
+        }
+        Assert::IsFalse(foundInNotApplied, L"Job should no longer be in NotApplied status");
+    }
+
+    TEST_METHOD(CanRetrieveJobsByMultipleStatuses)
+    {
+        // Arrange
+        SqlDbHandler handler;
+        handler.AddCompany("SpaceX", "Aerospace");
+        handler.AddJob("Rocket Engineer", "Propulsion systems", "SpaceX", 10, jobStatus::NotApplied);
+        handler.AddJob("Flight Software Engineer", "Embedded C++", "SpaceX", 9, jobStatus::Applied);
+        handler.AddJob("Systems Engineer", "Integration testing", "SpaceX", 8, jobStatus::Interviewing);
+
+        // Act & Assert - retrieve jobs by different statuses
+        Jobs notApplied = handler.GetJobsByStatus(jobStatus::NotApplied);
+        Jobs applied = handler.GetJobsByStatus(jobStatus::Applied);
+        Jobs interviewing = handler.GetJobsByStatus(jobStatus::Interviewing);
+
+        Assert::AreEqual(size_t(1), notApplied.size(), L"Should have 1 NotApplied job");
+        Assert::AreEqual(size_t(1), applied.size(), L"Should have 1 Applied job");
+        Assert::AreEqual(size_t(1), interviewing.size(), L"Should have 1 Interviewing job");
+    }
+
+    TEST_METHOD(GetJobsByStatusReturnsEmptyWhenNoMatches)
+    {
+        // Arrange
+        SqlDbHandler handler;
+        handler.AddCompany("Adobe", "Software");
+        handler.AddJob("UX Designer", "Design role", "Adobe", 6, jobStatus::NotApplied);
+
+        // Act - query for Offered status when no jobs have that status
+        Jobs offeredJobs = handler.GetJobsByStatus(jobStatus::Offered);
+
+        // Assert
+        Assert::AreEqual(size_t(0), offeredJobs.size(), L"Should return empty vector when no jobs match status");
+    }
+
+    TEST_METHOD(CanHandleRejectedStatus)
+    {
+        // Arrange
+        SqlDbHandler handler;
+        handler.AddCompany("Oracle", "Database Software");
+        handler.AddJob("Database Admin", "DBA position", "Oracle", 5, jobStatus::Applied);
+
+        // Act - update to rejected status
+        handler.UpdateJobStatus("Database Admin", jobStatus::Rejected);
+
+        // Assert
+        Jobs rejectedJobs = handler.GetJobsByStatus(jobStatus::Rejected);
+        Assert::IsTrue(rejectedJobs.size() > 0, L"Should have rejected job");
+        Assert::AreEqual(std::string("Database Admin"), rejectedJobs[0].title, L"Job title should match");
+    }
+
+    TEST_METHOD(JobStructContainsAllExpectedFields)
+    {
+        // Arrange
+        SqlDbHandler handler;
+        handler.AddCompany("IBM", "Technology");
+        handler.AddJob(
+            "Quantum Researcher",
+            "Quantum computing research",
+            "IBM",
+            10,
+            jobStatus::Offered
+        );
+
+        // Act
+        Jobs jobs = handler.GetJobsByStatus(jobStatus::Offered);
+
+        // Assert - verify all fields are populated correctly
+        Assert::IsTrue(jobs.size() > 0, L"Should retrieve the job");
+        const Job& job = jobs[0];
+        Assert::AreEqual(std::string("Quantum Researcher"), job.title, L"Title should match");
+        Assert::AreEqual(std::string("Quantum computing research"), job.description, L"Description should match");
+        Assert::AreEqual(std::string("IBM"), job.companyName, L"Company name should match");
+        Assert::AreEqual(10, job.match, L"Match score should be 10");
+        Assert::IsTrue(job.status == jobStatus::Offered, L"Status should be Offered");
+    }
+
+    TEST_METHOD(CanAddMultipleJobsToSameCompany)
+    {
+        // Arrange
+        SqlDbHandler handler;
+        handler.AddCompany("Nvidia", "Hardware");
+
+        // Act - add multiple jobs for the same company
+        handler.AddJob("CUDA Engineer", "GPU programming", "Nvidia", 9, jobStatus::NotApplied);
+        handler.AddJob("Graphics Driver Engineer", "Driver development", "Nvidia", 8, jobStatus::NotApplied);
+        handler.AddJob("AI Researcher", "Deep learning research", "Nvidia", 10, jobStatus::Applied);
+
+        // Assert
+        Jobs notApplied = handler.GetJobsByStatus(jobStatus::NotApplied);
+        Assert::IsTrue(notApplied.size() >= 2, L"Should have at least 2 NotApplied jobs for Nvidia");
     }
 };
