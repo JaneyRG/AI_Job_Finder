@@ -41,3 +41,9 @@ Database/dblib/.vs/dblib/CopilotIndices/18.4.119.15876/CodeChunks.db
 /Tests/dblib_test/x64/Debug/dblib_test.log
 /x64/Debug/dblib_test.dll
 /x64/Debug/dblib_test.pdb
+/.vs
+/.vs/AI_JobFinder/CopilotIndices/18.5.39187.10602/CodeChunks.db
+/.vs/AI_JobFinder/CopilotIndices/18.5.39187.10602/SemanticSymbols.db
+/Bin/dblib.dll
+/x64/Debug/dblib.dll
+/x64/Debug/dblib.pdb

@@ -85,6 +85,69 @@ namespace JobFinderDB
             std::cerr << "Failed to open SQLite database: " << sqlite3_errmsg(m_db) << std::endl;
             sqlite3_close(m_db);
             m_db = nullptr;
+            return;
+        }
+
+        // Initialize the database schema if tables don't exist
+        char* errmsg = nullptr;
+        
+        // Create Companies table
+        const char* createCompaniesTable = 
+            "CREATE TABLE IF NOT EXISTS Companies ("    
+            "id INTEGER PRIMARY KEY AUTOINCREMENT, "
+            "company_name TEXT UNIQUE NOT NULL, "
+            "sector TEXT, "
+            "reapply INTEGER DEFAULT 0);";
+        
+        rc = sqlite3_exec(m_db, createCompaniesTable, nullptr, nullptr, &errmsg);
+        if (rc != SQLITE_OK)
+        {
+            std::cerr << "Failed to create Companies table: " << errmsg << std::endl;
+            sqlite3_free(errmsg);
+            sqlite3_close(m_db);
+            m_db = nullptr;
+            return;
+        }
+
+        // Create Application table
+        const char* createApplicationTable = 
+            "CREATE TABLE IF NOT EXISTS Application ("
+            "id INTEGER PRIMARY KEY AUTOINCREMENT, "
+            "applied INTEGER DEFAULT 0, "   
+            "interview INTEGER DEFAULT 0, "
+            "offer INTEGER DEFAULT 0);";
+        
+        rc = sqlite3_exec(m_db, createApplicationTable, nullptr, nullptr, &errmsg);
+        if (rc != SQLITE_OK)
+        {
+            std::cerr << "Failed to create Application table: " << errmsg << std::endl;
+            sqlite3_free(errmsg);
+            sqlite3_close(m_db);
+            m_db = nullptr;
+            return;
+        }
+
+        // Create Jobs table
+        const char* createJobsTable = 
+            "CREATE TABLE IF NOT EXISTS Jobs ("
+            "id INTEGER PRIMARY KEY AUTOINCREMENT, "
+            "job_title TEXT NOT NULL, "
+            "company_id INTEGER NOT NULL, "
+            "application_id INTEGER NOT NULL, "
+            "job_description TEXT, "
+            "suitability TEXT, "
+            "active INTEGER DEFAULT 1, "
+            "FOREIGN KEY(company_id) REFERENCES Companies(id), "
+            "FOREIGN KEY(application_id) REFERENCES Application(id));";
+        
+        rc = sqlite3_exec(m_db, createJobsTable, nullptr, nullptr, &errmsg);
+        if (rc != SQLITE_OK)
+        {
+            std::cerr << "Failed to create Jobs table: " << errmsg << std::endl;
+            sqlite3_free(errmsg);
+            sqlite3_close(m_db);
+            m_db = nullptr;
+            return;
         }
     }
 

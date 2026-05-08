@@ -33,14 +33,14 @@ public:
     TEST_METHOD_INITIALIZE(Setup)
     {
         // Clean up any existing test database to ensure tests start fresh
-        fs::remove(DB_NAME);
+        // fs::remove(DB_NAME);
     }
 
     // Cleanup method called after each test
     TEST_METHOD_CLEANUP(Cleanup)
     {
         // Optional: Remove test database after each test
-        fs::remove(DB_NAME);
+        // fs::remove(DB_NAME);
     }
 
     TEST_METHOD(ConstructorConnectsToDatabase)
